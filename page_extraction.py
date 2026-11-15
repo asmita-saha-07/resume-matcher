@@ -1,8 +1,12 @@
 import pymupdf as pm
 import easyocr as e
-import fitz
 import numpy as np
+import streamlit as st
 
+@st.cache_resource
+def load_reader():
+    return easyocr.Reader(['en'], gpu=False)
+    
 def page_extract(resume):
 
     data = resume.getvalue()       
@@ -13,7 +17,7 @@ def page_extract(resume):
             text += page.get_text() + "\n"
 
     if not text.strip():
-        file= e.Reader(['en'])
+        file= load_reader()
         pages= pm.open(stream=data, filetype="pdf")
 
         text= ""
