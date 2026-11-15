@@ -5,7 +5,7 @@ import streamlit as st
 
 @st.cache_resource
 def load_reader():
-    return easyocr.Reader(['en'], gpu=False)
+    return e.Reader(['en'], gpu=False)
     
 def page_extract(resume):
 
