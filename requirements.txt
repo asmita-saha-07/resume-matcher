@@ -1,0 +1,6 @@
+pymupdf
+easyocr
+numpy
+pymupdf
+sklearn
+html
