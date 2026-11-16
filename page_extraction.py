@@ -1,10 +1,7 @@
-
 import pymupdf as pm
 import easyocr
 import numpy as np
 import streamlit as st
-
-from PIL import Image, ImageEnhance, ImageFilter
 
 
 @st.cache_resource
@@ -14,59 +11,41 @@ def load_reader():
 
 def page_extract(resume):
 
-    pdf_bytes = resume.getvalue()
-    reader = None
-    text = ""
+    data = resume.getvalue()
 
-    with pm.open(stream=pdf_bytes, filetype="pdf") as doc:
+    with pm.open(stream=data, filetype="pdf") as doc:
+
+        text = ""
 
         for page in doc:
+            text += page.get_text() + "\n"
 
-            page_text = page.get_text()
+        if not text.strip():
 
-            if page_text.strip():
-                text += page_text + "\n"
-                continue
+            reader = load_reader()
 
-            if reader is None:
-                reader = load_reader()
+            for page in doc:
 
-            pix = page.get_pixmap(
-                matrix=pm.Matrix(2, 2),
-                colorspace=pm.csRGB,
-                alpha=False
-            )
+                pix = page.get_pixmap(
+                    matrix=pm.Matrix(3, 3),
+                    colorspace=pm.csRGB,
+                    alpha=False
+                )
 
-            img = Image.frombytes(
-                "RGB",
-                [pix.width, pix.height],
-                pix.samples
-            )
+                img = np.frombuffer(
+                    pix.samples,
+                    dtype=np.uint8
+                )
 
-            # Improve contrast
-            img = ImageEnhance.Contrast(img).enhance(1.8)
+                img = img.reshape(
+                    pix.height,
+                    pix.width,
+                    3
+                )
 
-            # Sharpen text edges
-            img = img.filter(ImageFilter.SHARPEN)
+                result = reader.readtext(img)
 
-            # Moderate upscaling
-            img = img.resize(
-                (int(img.width * 1.3), int(img.height * 1.3)),
-                Image.Resampling.LANCZOS
-            )
-
-            img_array = np.array(img)
-
-            results = reader.readtext(
-                img_array,
-                detail=0,
-                batch_size=1,
-                workers=0,
-                canvas_size=2560,
-                mag_ratio=1.0
-            )
-
-            text += " ".join(results) + "\n"
+                for item in result:
+                    text += item[1] + " "
 
     return text
-
