@@ -1,28 +1,30 @@
-import pymupdf as pm
-import easyocr as e
-import numpy as np
-import streamlit as st
+import numpy as np, gc, easyocr, streamlit as st
+import pymupdf as pm  # or: import fitz as pm
 
 @st.cache_resource
-def load_reader():
-    return e.Reader(['en'], gpu=False)
-    
-def page_extract(resume):
-    pdf_bytes = resume.getvalue()
-    
-    with pm.open(stream=pdf_bytes, filetype="pdf") as doc:
-        text = ""
-        for page in doc:
-            text += page.get_text() + "\n"
+def get_reader():
+    return easyocr.Reader(['en'], gpu=False)
 
-        if not text.strip():
+def extract_text(pdf_bytes):
+    doc = pm.open(stream=pdf_bytes, filetype="pdf")
+    reader = None
+    out = []
+    for page in doc:
+        # 1) try real text first (works for most resumes)
+        text = page.get_text().strip()
+        if len(text) > 30:
+            out.append(text)
+            continue
 
-            reader = load_reader()
-            for page in doc:
-                pix = page.get_pixmap(dpi=250,colorspace=pm.csRGB,alpha=False)
-                img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, 3)
-                results = reader.readtext(img,batch_size=1,workers=0,detail=0,canvas_size=2560,mag_ratio=1.0)
+        # 2) OCR fallback, with the image width capped
+        if reader is None:
+            reader = get_reader()
+        zoom = min(1600 / page.rect.width, 3)
+        pix = page.get_pixmap(matrix=pm.Matrix(zoom, zoom),
+                              colorspace=pm.csGRAY, alpha=False)
+        img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width)
+        out.append(" ".join(reader.readtext(img, detail=0, paragraph=True)))
+        del pix, img
+        gc.collect()
+    return "\n".join(out)
 
-            for item in results:
-                text += item[1] + " "
-    return text
