@@ -9,26 +9,46 @@ def load_reader():
     
 def page_extract(resume):
 
-    data = resume.getvalue()       
+    st.write("Step 1: Reading PDF")
 
-    with pm.open(stream=data, filetype="pdf") as doc:
+    pdf_bytes = resume.getvalue()
+
+    with pm.open(stream=pdf_bytes, filetype="pdf") as doc:
+
         text = ""
+
         for page in doc:
             text += page.get_text() + "\n"
 
-    if not text.strip():
-        file= load_reader()
-        pages= pm.open(stream=data, filetype="pdf")
+        st.write("Step 2: PDF text extraction completed")
 
-        text= ""
+        if not text.strip():
 
-        for pg in pages:
-            pix= pg.get_pixmap( matrix=pm.Matrix(4, 4),colorspace=pm.csRGB,alpha=False)
-            img= np.frombuffer(pix.samples, dtype=np.uint8)
-            img= img.reshape(pix.height, pix.width, 3)
+            st.write("Step 3: Initializing EasyOCR")
 
-            result= file.readtext(img)
+            reader = load_reader()
 
-            for data in result:
-                text += data[1] + " "
+            st.write("Step 4: EasyOCR initialized")
+
+            for page in doc:
+
+                pix = page.get_pixmap(
+                    matrix=pm.Matrix(4, 4),
+                    colorspace=pm.csRGB,
+                    alpha=False
+                )
+
+                img = np.frombuffer(
+                    pix.samples, dtype=np.uint8
+                ).reshape(pix.height, pix.width, 3)
+
+                st.write("Step 5: Running OCR")
+
+                results = reader.readtext(img)
+
+                for item in results:
+                    text += item[1] + " "
+
+    st.write("Step 6: Extraction completed")
+
     return text
