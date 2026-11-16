@@ -5,7 +5,7 @@ import pymupdf as pm  # or: import fitz as pm
 def get_reader():
     return easyocr.Reader(['en'], gpu=False)
 
-def psge_extract(pdf_bytes):
+def page_extract(pdf_bytes):
     doc = pm.open(stream=pdf_bytes, filetype="pdf")
     reader = None
     out = []
