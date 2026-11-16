@@ -10,9 +10,7 @@ def load_reader():
 
 
 def page_extract(resume):
-
     data = resume.getvalue()
-
     with pm.open(stream=data, filetype="pdf") as doc:
 
         text = ""
@@ -26,22 +24,9 @@ def page_extract(resume):
 
             for page in doc:
 
-                pix = page.get_pixmap(
-                    matrix=pm.Matrix(3, 3),
-                    colorspace=pm.csRGB,
-                    alpha=False
-                )
-
-                img = np.frombuffer(
-                    pix.samples,
-                    dtype=np.uint8
-                )
-
-                img = img.reshape(
-                    pix.height,
-                    pix.width,
-                    3
-                )
+                pix = page.get_pixmap(matrix=pm.Matrix(4,4),colorspace=pm.csRGB,alpha=False)
+                img = np.frombuffer( pix.samples,dtype=np.uint8)
+                img = img.reshape(pix.height,pix.width,3)
 
                 result = reader.readtext(img)
 
