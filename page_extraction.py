@@ -3,7 +3,8 @@ import pymupdf as pm
 import easyocr
 import numpy as np
 import streamlit as st
-import cv2
+
+from PIL import Image, ImageEnhance, ImageFilter
 
 
 @st.cache_resource
@@ -20,6 +21,7 @@ def page_extract(resume):
     with pm.open(stream=pdf_bytes, filetype="pdf") as doc:
 
         for page in doc:
+
             page_text = page.get_text()
 
             if page_text.strip():
@@ -29,39 +31,34 @@ def page_extract(resume):
             if reader is None:
                 reader = load_reader()
 
-            # Render at 2x instead of 4x
             pix = page.get_pixmap(
                 matrix=pm.Matrix(2, 2),
                 colorspace=pm.csRGB,
                 alpha=False
             )
 
-            img = np.frombuffer(
-                pix.samples, dtype=np.uint8
-            ).reshape(pix.height, pix.width, 3)
+            img = Image.frombytes(
+                "RGB",
+                [pix.width, pix.height],
+                pix.samples
+            )
 
             # Improve contrast
-            gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+            img = ImageEnhance.Contrast(img).enhance(1.8)
 
-            clahe = cv2.createCLAHE(
-                clipLimit=2.0,
-                tileGridSize=(8, 8)
+            # Sharpen text edges
+            img = img.filter(ImageFilter.SHARPEN)
+
+            # Moderate upscaling
+            img = img.resize(
+                (int(img.width * 1.3), int(img.height * 1.3)),
+                Image.Resampling.LANCZOS
             )
 
-            enhanced = clahe.apply(gray)
+            img_array = np.array(img)
 
-            # Upscale moderately, not to 4x
-            enhanced = cv2.resize(
-                enhanced,
-                None,
-                fx=1.3,
-                fy=1.3,
-                interpolation=cv2.INTER_CUBIC
-            )
-
-            # detail=0 returns strings, not tuples
             results = reader.readtext(
-                enhanced,
+                img_array,
                 detail=0,
                 batch_size=1,
                 workers=0,
@@ -72,3 +69,4 @@ def page_extract(resume):
             text += " ".join(results) + "\n"
 
     return text
+
