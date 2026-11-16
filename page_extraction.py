@@ -33,7 +33,7 @@ def page_extract(resume):
             for page in doc:
 
                 pix = page.get_pixmap(
-                    matrix=pm.Matrix(4, 4),
+                    matrix=pm.Matrix(2,2),
                     colorspace=pm.csRGB,
                     alpha=False
                 )
@@ -44,10 +44,24 @@ def page_extract(resume):
 
                 st.write("Step 5: Running OCR")
 
-                results = reader.readtext(img)
+                try:
 
-                for item in results:
-                    text += item[1] + " "
+                    results = reader.readtext(
+                            img,
+                            batch_size=1,
+                            workers=0,
+                            detail=0,
+                            canvas_size=2560,
+                            mag_ratio=1.0
+                        )
+
+                    st.write(f"OCR Successful")
+
+                    for item in results:
+                        text += item[1] + " "
+
+                except Exception:
+                    st.write(f"OCR failed")
 
     st.write("Step 6: Extraction completed")
 
