@@ -19,7 +19,7 @@ def page_extract(resume):
 
             reader = load_reader()
             for page in doc:
-                pix = page.get_pixmap(matrix=pm.Matrix(2,2),colorspace=pm.csRGB,alpha=False)
+                pix = page.get_pixmap(matrix=pm.Matrix(4,4),colorspace=pm.csRGB,alpha=False)
                 img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, 3)
                 results = reader.readtext(img,batch_size=1,workers=0,detail=0,canvas_size=2560,mag_ratio=1.0)
 
