@@ -8,7 +8,6 @@ def load_reader():
     return e.Reader(['en'], gpu=False)
     
 def page_extract(resume):
-    st.write("Step 1: Reading PDF")
     pdf_bytes = resume.getvalue()
     
     with pm.open(stream=pdf_bytes, filetype="pdf") as doc:
